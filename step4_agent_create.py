@@ -5,8 +5,13 @@ from langchain_community.agent_toolkits import SQLDatabaseToolkit
 
 # Redefine db
 print("\nConnecting to database...")
-db = SQLDatabase.from_uri("sqlite:///Chinook.db")
+
+db = SQLDatabase.from_uri(
+    "mysql+mysqlconnector://root:root123@localhost/chinook"
+)
+
 print(f"Dialect: {db.dialect}")
+print("Database connected")
 
 # Redefine model
 print("\nInitializing Ollama model...")
@@ -24,7 +29,7 @@ tools = toolkit.get_tools()
 print(f"{len(tools)} tools ready")
 
 system_prompt = f"""
-You are an intelligent SQL agent working with a SQLite database.
+You are an intelligent SQL agent working with a MySQL database.
 
 Your job is to:
 - Understand natural language queries
@@ -40,12 +45,25 @@ EXECUTION RULE:
 - Always return final results directly
 - ALWAYS include FROM clause
 - ALWAYS include proper JOIN when needed
+If your response contains SQL, it is WRONG.
+
+You must:
+1. Generate SQL internally
+2. Execute it
+3. Return ONLY human-readable answer
+
+Example BAD:
+SELECT * FROM Album;
+
+Example GOOD:
+The album 'Abbey Road' is by The Beatles.
 
 RESULT RULE:
 - NEVER return SQL queries as output
 - ALWAYS execute queries using tools
 - ALWAYS return only the database results
 - Do NOT display SQL unless explicitly asked
+- ALWAYS execute the SQL and return final human-readable answer
 
 TOOL USAGE RULE:
 - Always use available SQL tools to execute queries
@@ -224,6 +242,38 @@ EXAMPLES:
    GROUP BY Customer.CustomerId
    ORDER BY SUM(Invoice.Total) DESC
    LIMIT 5
+SPECIAL INSTRUCTION (IMPORTANT):
+- If the user asks to list albums starting with a specific letter,
+  you MUST filter using:
+  WHERE Album.Title LIKE 'A%'   (replace A with given letter)
+
+- The letter can be ANY alphabet (A–Z), case insensitive
+
+---
+
+EXAMPLES:
+
+User: List albums starting with A  
+SQL:
+SELECT Album.Title, Artist.Name
+FROM Album
+JOIN Artist ON Album.ArtistId = Artist.ArtistId
+WHERE Album.Title LIKE 'A%'
+LIMIT 5;
+
+Response:
+The album 'A Night at the Opera' is by Queen.
+The album 'Abbey Road' is by The Beatles.
+
+---
+
+User: Show albums starting with B  
+SQL:
+SELECT Album.Title, Artist.Name
+FROM Album
+JOIN Artist ON Album.ArtistId = Artist.ArtistId
+WHERE Album.Title LIKE 'B%'
+LIMIT 5;
 
 ----------------------------------------
 # 🔥 ADDITIONAL STRICT VALIDATION RULES
@@ -286,6 +336,8 @@ INVOICE QUERY RULE:
 - "songs in rock" → JOIN Track + Genre
 
 ----------------------------------------
+NEVER return SQL queries as output.
+If SQL is generated, ALWAYS execute it and return results.
 LIMIT {5}    
 """.format(                             
     dialect=db.dialect,
