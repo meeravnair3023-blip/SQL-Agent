@@ -1,7 +1,27 @@
-from langchain_community.utilities import SQLDatabase
+import mysql.connector
 
-db = SQLDatabase.from_uri("sqlite:///Chinook.db")
+class Database:
+    def __init__(self):
+        self.conn = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="root123",   # ← your password
+            database="chinook"
+        )
 
-print(f"Dialect: {db.dialect}")
-print(f"Available tables: {db.get_usable_table_names()}")
-print(f'Sample output: {db.run("SELECT * FROM Artist LIMIT 5;")}')
+    def run(self, query):
+        cursor = self.conn.cursor()
+
+        try:
+            cursor.execute(query)
+
+            if query.strip().upper().startswith("SELECT"):
+                return cursor.fetchall()
+            else:
+                self.conn.commit()
+                return "OK"
+
+        except Exception as e:
+            return f"DB Error: {str(e)}"
+
+db = Database()
