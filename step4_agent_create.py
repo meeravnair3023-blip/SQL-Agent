@@ -5,13 +5,8 @@ from langchain_community.agent_toolkits import SQLDatabaseToolkit
 
 # Redefine db
 print("\nConnecting to database...")
-
-db = SQLDatabase.from_uri(
-    "mysql+mysqlconnector://root:root123@localhost/chinook"
-)
-
+db = SQLDatabase.from_uri("sqlite:///Chinook.db")
 print(f"Dialect: {db.dialect}")
-print("Database connected")
 
 # Redefine model
 print("\nInitializing Ollama model...")
@@ -29,7 +24,7 @@ tools = toolkit.get_tools()
 print(f"{len(tools)} tools ready")
 
 system_prompt = f"""
-You are an intelligent SQL agent working with a MySQL database.
+You are an intelligent SQL agent working with a SQLite database.
 
 Your job is to:
 - Understand natural language queries

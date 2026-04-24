@@ -1,13 +1,8 @@
-import mysql.connector
+import sqlite3
 
 class Database:
     def __init__(self):
-        self.conn = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="root123",   # ← your password
-            database="chinook"
-        )
+        self.conn = sqlite3.connect("Chinook.db", check_same_thread=False)
 
     def run(self, query):
         cursor = self.conn.cursor()
